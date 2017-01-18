@@ -22,6 +22,6 @@
       - luigi
       
   - name: Start luigid scheduler
-    command: luigid --background --pidfile /home/vagrant/luigid.pid --logdir /home/vagrant/logs --state-path /home/vagrant/luigid.dat --workers 3
+    command: luigid --background --pidfile /home/vagrant/luigid.pid --logdir /home/vagrant/logs --state-path /home/vagrant/luigid.dat
     args:
       creates: /home/vagrant/luigid.pid
