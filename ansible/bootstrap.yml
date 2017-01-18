@@ -1,0 +1,27 @@
+---
+- hosts: all
+  become: yes
+  become_method: sudo
+
+  tasks:
+  - name: Make sure apt packages are up-to-date
+    apt:
+      update_cache: yes
+      upgrade: dist
+  
+  - name: Install needed apt packages
+    apt: name={{ item }} state=present
+    with_items:
+      - python-pip
+      
+  - name: Install needed pip packages
+    pip: name={{ item }} state=present
+    with_items:
+      - virtualenv
+      - virtualenvwrapper
+      - luigi
+      
+  - name: Start luigid scheduler
+    command: luigid --background --pidfile /home/vagrant/luigid.pid --logdir /home/vagrant/logs --state-path /home/vagrant/luigid.dat --workers 3
+    args:
+      creates: /home/vagrant/luigid.pid
