@@ -25,8 +25,8 @@ class TaskTemplate(luigi.Task):
 
 class ETLTask(luigi.Task):
     
-    db_host = luigi.Parameter(default='localhost')
-    db_port = luigi.Parameter(default='5432')
+    db_host = luigi.Parameter()
+    db_port = luigi.Parameter()
     db_user = luigi.Parameter()
     db_pass = luigi.Parameter()
     db_name = luigi.Parameter()
@@ -154,5 +154,14 @@ class EncounterLoad(LoadTask):
 
 class PCORnetETL(luigi.WrapperTask):
     
+    db_host = luigi.Parameter(default='localhost')
+    db_port = luigi.Parameter(default='5432')
+    db_user = luigi.Parameter()
+    db_pass = luigi.Parameter()
+    db_name = luigi.Parameter()
+    
     def requires(self):
-        yield EncounterLoad(db_user='luigi', db_pass='password', db_name='pcornet')
+        #yield EncounterLoad(db_user='luigi', db_pass='password', db_name='pcornet')
+        yield EncounterLoad(
+            self.db_host, self.db_port, self.db_user, self.db_pass, self.db_name
+        )
