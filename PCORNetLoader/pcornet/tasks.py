@@ -173,8 +173,19 @@ class Harvest(luigi.Task):
         return luigi.LocalTarget('/vagrant/data/harvest.txt')
 
 
-#class PCORnetETL(luigi.WrapperTask):
+class PCORnetETL(luigi.WrapperTask):
     
-#    def requires(self):
-#        return 
+    def requires(self):
+        #yield Demographic()
+        #yield Encounter()
+        #yield Diagnosis()
+        #yield Condition()
+        #yield Procedure()
+        #yield Vital()
+        #yield Enrollment()
+        #yield LabResultCM()
+        #yield Prescribing()
+        #yield Dispensing()
+        #yield Death()
+        yield Harvest()
     
