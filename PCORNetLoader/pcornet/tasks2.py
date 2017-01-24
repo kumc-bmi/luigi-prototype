@@ -5,8 +5,8 @@ from time import sleep
 from random import randint
 
 
-class ETLTemplate(luigi.Task):
-
+class TaskTemplate(luigi.Task):
+    
     def requires(self):
         '''
         1. Needs the stuff
@@ -19,7 +19,7 @@ class ETLTemplate(luigi.Task):
     
     def complete(self):
         '''
-        3. test for completeness (an alternative to standard output method)
+        3. test for completeness (an alternative to the standard output method)
         '''
 
 
@@ -31,7 +31,7 @@ class ETLTask(luigi.Task):
     db_pass = luigi.Parameter()
     db_name = luigi.Parameter()
     
-    def get_conn():
+    def get_conn(self):
         conn_dsn = 'host=%s port=%s user=%s password=%s dbname=%s' % (
             self.db_host, self.db_port, self.db_user, self.db_pass, self.db_name
         )
@@ -49,10 +49,28 @@ class TransformTask(ETLTask):
         
         # Create transform view
         with open(self.transform_file_path, 'r') as transform_sql:
-            cur.execute(transform_sql)
+            cur.execute(transform_sql.read())
         
         conn.commit()
         conn.close()
+    
+    def complete(self):
+        conn = self.get_conn()
+        cur = conn.cursor()
+        
+        # Check that view is populated (low-bar test for completeness)
+        completed = False
+        try:
+            cur.execute('SELECT * FROM %s;' % self.transform_view)
+            if cur.rowcount > 0:
+                completed = True
+        except:
+            pass  # Don't really do this!
+        
+        conn.commit()
+        conn.close()
+        
+        return completed
 
 
 class LoadTask(ETLTask):
@@ -67,107 +85,74 @@ class LoadTask(ETLTask):
                 
         # Insert into load table
         with open(self.load_file_path, 'r') as load_sql:
-            cur.execute(load_sql)
+            cur.execute(load_sql.read())
         
         conn.commit()
         conn.close()
+    
+    def complete(self):
+        conn = self.get_conn()
+        cur = conn.cursor()
+        
+        # Check that rows have been inserted (low-bar test for completeness)
+        completed = False
+        try:
+            cur.execute('SELECT * FROM %s;' % self.destination_table)
+            if cur.rowcount > 0:
+                completed = True
+        except:
+            pass  # Don't really do this!
+        
+        conn.commit()
+        conn.close()
+        
+        return completed
 
 
 class DemographicTransform(TransformTask):
     
     transform_view = 'demographic_transform'
-    transform_file_path = '/Users/mprittie/Vagrant/luigi/PCORNetLoader/sql/demographic_transform.sql'
-        
-    def complete(self):
-        conn = self.get_conn()
-        cur = conn.cursor()
-        
-        # Check that view is populated (low-bar test for completeness)
-        cur.execute('SELECT * FROM %s;' % self.transform_view)
-        if cur.rowcount > 0:
-            return True
-        else:
-            return False
-        
-        conn.commit()
-        conn.close()
+    transform_file_path = '/vagrant/PCORNetLoader/sql/demographic_transform.sql'
 
 
 class DemographicLoad(LoadTask):
     
     destination_table = 'demographic'
-    load_file_path = '/Users/mprittie/Vagrant/luigi/PCORNetLoader/sql/demographic_load.sql'
+    load_file_path = '/vagrant/PCORNetLoader/sql/demographic_load.sql'
     
     def requires(self):
         return DemographicTransform(
             self.db_host, self.db_port, self.db_user, self.db_pass, self.db_name
         )
-    
-    def complete(self):
-        conn = self.get_conn()
-        cur = conn.cursor()
-        
-        # Check that rows have been inserted (low-bar test for completeness)
-        cur.execute('SELECT * FROM %s;' % self.destination_table)
-        if cur.rowcount > 0:
-            return True
-        else:
-            return False
-        
-        conn.commit()
-        conn.close()
-
-
-
-# To be continued ...
-
-
 
 
 class EncounterTransform(TransformTask):
     
     transform_view = 'encounter_transform'
-    transform_file_path = '/Users/mprittie/Vagrant/luigi/PCORNetLoader/sql/encounter_transform.sql'
-    
-    def complete(self):
-        conn = self.get_conn()
-        cur = conn.cursor()
-        
-        # Check that view exists
-        # Check that view is populated (low-bar test for completeness)
-        cur.execute('SELECT * FROM %s;' % self.transform_view)
-        if cur.rowcount > 0:
-            return True
-        else:
-            return False
-        
-        conn.commit()
-        conn.close()
+    transform_file_path = '/vagrant/PCORNetLoader/sql/encounter_transform.sql'
 
 
 class EncounterLoad(LoadTask):
     
     destination_table = 'encounter'
-    load_file_path = '/Users/mprittie/Vagrant/luigi/PCORNetLoader/sql/encounter_load.sql'
+    load_file_path = '/vagrant/PCORNetLoader/sql/encounter_load.sql'
     
     def requires(self):
-        return EncounterTransform(
-            self.db_host, self.db_port, self.db_user, self.db_pass, self.db_name
-        ),
-        DemographicLoad(
-            self.db_host, self.db_port, self.db_user, self.db_pass, self.db_name
-        )
+        params = {
+            'db_host': self.db_host,
+            'db_port': self.db_port,
+            'db_user': self.db_user,
+            'db_pass': self.db_pass,
+            'db_name': self.db_name
+        }
+        
+        return [
+            DemographicLoad(**params),
+            EncounterTransform(**params)
+        ]
 
-    def complete(self):
-        conn = self.get_conn()
-        cur = conn.cursor()
-        
-        # Check that rows have been inserted (low-bar test for completeness)
-        cur.execute('SELECT * FROM %s;' % self.destination_table)
-        if cur.rowcount > 0:
-            return True
-        else:
-            return False
-        
-        conn.commit()
-        conn.close()
+
+class PCORnetETL(luigi.WrapperTask):
+    
+    def requires(self):
+        yield EncounterLoad(db_user='luigi', db_pass='password', db_name='pcornet')
