@@ -13,14 +13,38 @@
     apt: name={{ item }} state=present
     with_items:
       - python-pip
+      - python-dev
+      - postgresql
+      - postgresql-server-dev-all
       
   - name: Install needed pip packages
     pip: name={{ item }} state=present
     with_items:
       - virtualenv
       - virtualenvwrapper
+      - psycopg2
       - luigi
-      
+
+  - name: Start postgresql server
+    service:
+      name: postgresql
+      state: started
+
+  - name: Create luigi postgres user
+    become: yes
+    become_user: postgres
+    postgresql_user:
+      name: luigi
+      password: password
+      role_attr_flags: CREATEDB,NOSUPERUSER
+
+  - name: Create test ETL database
+    become: yes
+    become_user: postgres
+    postgresql_db:
+      name: pcornet
+      owner: luigi
+
   - name: Start luigid scheduler
     command: luigid --background --pidfile /home/vagrant/luigid.pid --logdir /home/vagrant/logs --state-path /home/vagrant/luigid.dat
     args:
