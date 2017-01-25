@@ -25,10 +25,18 @@
       - psycopg2
       - luigi
 
+  - name: Copy postgres pb_hba.conf file
+    copy:
+      src: /Users/mprittie/Vagrant/luigi/conf/pg_hba.conf
+      dest: /etc/postgresql/9.3/main/pg_hba.conf
+      owner: postgres
+      group: postgres
+      mode: "u=rw,g=r"
+
   - name: Start postgresql server
     service:
       name: postgresql
-      state: started
+      state: restarted
 
   - name: Create luigi postgres user
     become: yes
@@ -44,6 +52,19 @@
     postgresql_db:
       name: pcornet
       owner: luigi
+
+  - name: Create PCORnetETL virtualenv
+      pip:
+        virtualenv: /vagrant/venv
+        virtualenv_site_packages: yes
+
+  - name: Copy pcornet.pth into virtualenv
+    copy:
+      src: /Users/mprittie/Vagrant/luigi/conf/pcornet.pth
+      dest: /vagrant/venv/lib/python2.7/site-packages/pcornet.pth
+      owner: vagrant
+      group: vagrant
+      mode: "u=rw,g=r,o=r"
 
   - name: Start luigid scheduler
     command: luigid --background --pidfile /home/vagrant/luigid.pid --logdir /home/vagrant/logs --state-path /home/vagrant/luigid.dat

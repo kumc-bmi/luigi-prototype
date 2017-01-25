@@ -161,7 +161,6 @@ class PCORnetETL(luigi.WrapperTask):
     db_name = luigi.Parameter()
     
     def requires(self):
-        #yield EncounterLoad(db_user='luigi', db_pass='password', db_name='pcornet')
         yield EncounterLoad(
             self.db_host, self.db_port, self.db_user, self.db_pass, self.db_name
         )
