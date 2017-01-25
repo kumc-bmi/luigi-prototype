@@ -1,0 +1,5 @@
+.vagrant
+bootstrap.retry
+*.pyc
+data/
+venv/
