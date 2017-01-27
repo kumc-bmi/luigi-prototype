@@ -44,7 +44,7 @@ $ source ../venv/bin/activate
 ```
 You should be able to watch the tasks complete by viewing the dependancy graph in the Luigi UI.
 
-## PostgreSQL ELT Workflow
+## PostgreSQL ETL Workflow
 The code for this workflow can be found in `PCORNetLoader/pcornet/tasks2.py`.  This This workflow actually does a small ETL from the source tables into destination tables using intermediary transform views.  To run this workflow run the following commands:
 ```sh
 (venv)$ python -m luigi --module pcornet.tasks2 PCORnetETL --workers=2
