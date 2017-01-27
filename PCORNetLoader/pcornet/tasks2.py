@@ -1,8 +1,6 @@
 
 import luigi
 import psycopg2
-from time import sleep
-from random import randint
 
 
 class TaskTemplate(luigi.Task):
@@ -33,7 +31,8 @@ class ETLTask(luigi.Task):
     
     def get_conn(self):
         conn_dsn = 'host=%s port=%s user=%s password=%s dbname=%s' % (
-            self.db_host, self.db_port, self.db_user, self.db_pass, self.db_name
+            self.db_host, self.db_port, self.db_user, self.db_pass,
+            self.db_name
         )
         return psycopg2.connect(conn_dsn)
 
@@ -112,7 +111,8 @@ class LoadTask(ETLTask):
 class DemographicTransform(TransformTask):
     
     transform_view = 'demographic_transform'
-    transform_file_path = '/vagrant/PCORNetLoader/sql/demographic_transform.sql'
+    transform_file_path = (
+        '/vagrant/PCORNetLoader/sql/demographic_transform.sql')
 
 
 class DemographicLoad(LoadTask):
@@ -122,7 +122,8 @@ class DemographicLoad(LoadTask):
     
     def requires(self):
         return DemographicTransform(
-            self.db_host, self.db_port, self.db_user, self.db_pass, self.db_name
+            self.db_host, self.db_port, self.db_user, self.db_pass,
+            self.db_name
         )
 
 
@@ -162,5 +163,6 @@ class PCORnetETL(luigi.WrapperTask):
     
     def requires(self):
         yield EncounterLoad(
-            self.db_host, self.db_port, self.db_user, self.db_pass, self.db_name
+            self.db_host, self.db_port, self.db_user, self.db_pass,
+            self.db_name
         )
