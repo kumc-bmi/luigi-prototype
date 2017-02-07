@@ -22,6 +22,7 @@
     with_items:
       - virtualenv
       - psycopg2
+      - sqlalchemy
       - luigi
 
   - name: Copy postgres pb_hba.conf file
@@ -44,6 +45,13 @@
       name: luigi
       password: password
       role_attr_flags: CREATEDB,NOSUPERUSER
+
+  - name: Create database for Luigi task history
+    become: yes
+    become_user: postgres
+    postgresql_db:
+      name: luigi
+      owner: luigi
 
   - name: Create test ETL database
     become: yes
@@ -72,8 +80,11 @@
     file:
       path: /vagrant/data
       state: directory
-      
+
   - name: Start luigid scheduler
     command: luigid --background --pidfile /home/vagrant/luigid.pid --logdir /home/vagrant/logs --state-path /home/vagrant/luigid.dat
+    environment:
+      LUIGI_CONFIG_PATH: /vagrant/PCORNetLoader/luigi.cfg
     args:
       creates: /home/vagrant/luigid.pid
+      
